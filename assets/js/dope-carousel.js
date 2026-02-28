@@ -242,18 +242,52 @@
 
   function initScope(scope) {
     var root = scope || document;
-    root.querySelectorAll('.dc-carousel').forEach(function (carouselRoot) {
-      initCarousel(carouselRoot, false);
-    });
+
+    if (root.classList && root.classList.contains('dc-carousel')) {
+      initCarousel(root, false);
+      return;
+    }
+
+    if (root.querySelectorAll) {
+      root.querySelectorAll('.dc-carousel').forEach(function (carouselRoot) {
+        initCarousel(carouselRoot, false);
+      });
+    }
+  }
+
+  function getScopeElement(scope) {
+    if (!scope) {
+      return null;
+    }
+
+    if (scope.nodeType === 1) {
+      return scope;
+    }
+
+    if (scope[0] && scope[0].nodeType === 1) {
+      return scope[0];
+    }
+
+    if (scope.jquery && typeof scope.get === 'function') {
+      return scope.get(0) || null;
+    }
+
+    return null;
   }
 
   if (window.elementorFrontend && window.elementorFrontend.hooks) {
     window.elementorFrontend.hooks.addAction('frontend/element_ready/dope_carousel.default', function ($scope) {
-      if (!$scope || !$scope[0]) {
+      var scopeElement = getScopeElement($scope);
+      if (!scopeElement) {
         return;
       }
 
-      $scope[0].querySelectorAll('.dc-carousel').forEach(function (carouselRoot) {
+      if (scopeElement.classList && scopeElement.classList.contains('dc-carousel')) {
+        initCarousel(scopeElement, true);
+        return;
+      }
+
+      scopeElement.querySelectorAll('.dc-carousel').forEach(function (carouselRoot) {
         initCarousel(carouselRoot, true);
       });
     });
