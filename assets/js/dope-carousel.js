@@ -185,8 +185,32 @@
     return true;
   }
 
-  function initCarousel(root) {
-    if (!root || root.dataset.ready === '1') {
+  function destroyCarousel(root) {
+    if (!root) {
+      return;
+    }
+
+    ['dcSwiper', 'dcSwiperTop', 'dcSwiperBottom'].forEach(function (key) {
+      if (root[key] && typeof root[key].destroy === 'function') {
+        root[key].destroy(true, true);
+      }
+      root[key] = null;
+    });
+
+    root.dataset.ready = '0';
+    root.classList.remove('dc-carousel--ticker-ready');
+  }
+
+  function initCarousel(root, forceReinit) {
+    if (!root) {
+      return;
+    }
+
+    if (forceReinit) {
+      destroyCarousel(root);
+    }
+
+    if (root.dataset.ready === '1') {
       return;
     }
 
@@ -218,12 +242,20 @@
 
   function initScope(scope) {
     var root = scope || document;
-    root.querySelectorAll('.dc-carousel').forEach(initCarousel);
+    root.querySelectorAll('.dc-carousel').forEach(function (carouselRoot) {
+      initCarousel(carouselRoot, false);
+    });
   }
 
   if (window.elementorFrontend && window.elementorFrontend.hooks) {
     window.elementorFrontend.hooks.addAction('frontend/element_ready/dope_carousel.default', function ($scope) {
-      initScope($scope[0]);
+      if (!$scope || !$scope[0]) {
+        return;
+      }
+
+      $scope[0].querySelectorAll('.dc-carousel').forEach(function (carouselRoot) {
+        initCarousel(carouselRoot, true);
+      });
     });
   }
 

@@ -10,6 +10,17 @@
   overflow: hidden;
 }
 
+/* Editor-safe fallback before Swiper init to avoid raw unstructured image output. */
+.dc-carousel__swiper:not(.swiper-initialized) .swiper-wrapper {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.dc-carousel__swiper:not(.swiper-initialized) .swiper-slide {
+  width: auto !important;
+}
+
 .dc-carousel--alt-ticker .dc-carousel__ticker-rows {
   display: flex;
   flex-direction: column;
