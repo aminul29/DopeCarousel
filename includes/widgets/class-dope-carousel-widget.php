@@ -82,6 +82,51 @@ class Dope_Carousel_Widget extends Widget_Base {
             )
         );
 
+        $this->add_control(
+            'gallery_show_title',
+            array(
+                'label'        => esc_html__( 'Show Title', 'dope-carousel' ),
+                'type'         => Controls_Manager::SWITCHER,
+                'default'      => 'yes',
+                'label_on'     => esc_html__( 'Show', 'dope-carousel' ),
+                'label_off'    => esc_html__( 'Hide', 'dope-carousel' ),
+                'return_value' => 'yes',
+                'condition'    => array(
+                    'content_source' => 'gallery',
+                ),
+            )
+        );
+
+        $this->add_control(
+            'gallery_show_description',
+            array(
+                'label'        => esc_html__( 'Show Description', 'dope-carousel' ),
+                'type'         => Controls_Manager::SWITCHER,
+                'default'      => 'yes',
+                'label_on'     => esc_html__( 'Show', 'dope-carousel' ),
+                'label_off'    => esc_html__( 'Hide', 'dope-carousel' ),
+                'return_value' => 'yes',
+                'condition'    => array(
+                    'content_source' => 'gallery',
+                ),
+            )
+        );
+
+        $this->add_control(
+            'gallery_show_button',
+            array(
+                'label'        => esc_html__( 'Show Button', 'dope-carousel' ),
+                'type'         => Controls_Manager::SWITCHER,
+                'default'      => 'yes',
+                'label_on'     => esc_html__( 'Show', 'dope-carousel' ),
+                'label_off'    => esc_html__( 'Hide', 'dope-carousel' ),
+                'return_value' => 'yes',
+                'condition'    => array(
+                    'content_source' => 'gallery',
+                ),
+            )
+        );
+
         $repeater = new Repeater();
 
         $repeater->add_control(
@@ -1181,6 +1226,10 @@ class Dope_Carousel_Widget extends Widget_Base {
             ? $settings['slide_style']
             : 'slide';
 
+        $gallery_show_title       = $this->is_enabled( $settings, 'gallery_show_title', true );
+        $gallery_show_description = $this->is_enabled( $settings, 'gallery_show_description', true );
+        $gallery_show_button      = $this->is_enabled( $settings, 'gallery_show_button', true );
+
         $show_arrows = $this->is_enabled( $settings, 'show_arrows', true );
         $show_dots   = $this->is_enabled( $settings, 'show_dots', true );
         $allow_drag  = $this->is_enabled( $settings, 'allow_drag', true );
@@ -1204,6 +1253,28 @@ class Dope_Carousel_Widget extends Widget_Base {
             : 'normal';
 
         $ticker_speed = $this->sanitize_int( $settings['ticker_speed'] ?? 4500, 4500, 1000 );
+        $alternate_ticker_rows = 'double_row' === $layout && 'ticker' === $slide_style;
+        $top_row_slides        = array();
+        $bottom_row_slides     = array();
+
+        if ( $alternate_ticker_rows ) {
+            $split_rows = $this->split_slides_for_alternate_ticker( $slides );
+
+            if ( isset( $split_rows['top'] ) && is_array( $split_rows['top'] ) ) {
+                $top_row_slides = $split_rows['top'];
+            }
+
+            if ( isset( $split_rows['bottom'] ) && is_array( $split_rows['bottom'] ) ) {
+                $bottom_row_slides = $split_rows['bottom'];
+            }
+
+            if ( empty( $top_row_slides ) || empty( $bottom_row_slides ) ) {
+                $alternate_ticker_rows = false;
+            }
+        }
+
+        $effective_show_arrows = $alternate_ticker_rows ? false : $show_arrows;
+        $effective_show_dots   = $alternate_ticker_rows ? false : $show_dots;
 
         $uid           = wp_unique_id( 'dc-carousel-' );
         $prev_button   = $uid . '-prev';
@@ -1228,97 +1299,58 @@ class Dope_Carousel_Widget extends Widget_Base {
             'autoplay'       => $autoplay,
             'autoplayDelay'  => $autoplay_delay,
             'pauseOnHover'   => $pause_on_hover,
-            'arrows'         => $show_arrows,
-            'dots'           => $show_dots,
+            'arrows'         => $effective_show_arrows,
+            'dots'           => $effective_show_dots,
             'drag'           => $allow_drag,
             'tickerDirection'=> $ticker_direction,
             'tickerSpeed'    => $ticker_speed,
+            'galleryVisibilityTitle'       => $gallery_show_title,
+            'galleryVisibilityDescription' => $gallery_show_description,
+            'galleryVisibilityButton'      => $gallery_show_button,
+            'alternateTickerRows'          => $alternate_ticker_rows,
             'selectors'      => array(
-                'prev'       => $show_arrows ? '#' . $prev_button : '',
-                'next'       => $show_arrows ? '#' . $next_button : '',
-                'pagination' => $show_dots ? '#' . $pagination_id : '',
+                'prev'       => $effective_show_arrows ? '#' . $prev_button : '',
+                'next'       => $effective_show_arrows ? '#' . $next_button : '',
+                'pagination' => $effective_show_dots ? '#' . $pagination_id : '',
             ),
         );
 
         $wrapper_classes = 'dc-carousel dc-carousel--layout-' . $layout . ' dc-carousel--style-' . $slide_style;
 
-        echo '<div class="' . esc_attr( $wrapper_classes ) . '" id="' . esc_attr( $uid ) . '" data-dc-config="' . esc_attr( wp_json_encode( $config ) ) . '">';
-        echo '<div class="dc-carousel__swiper swiper">';
-        echo '<div class="swiper-wrapper">';
-
-        foreach ( $slides as $index => $slide ) {
-            $image_url = '';
-
-            if ( isset( $slide['slide_image']['url'] ) && '' !== $slide['slide_image']['url'] ) {
-                $image_url = $slide['slide_image']['url'];
-            }
-
-            if ( '' === $image_url ) {
-                $image_url = Utils::get_placeholder_image_src();
-            }
-
-            $image_alt = '';
-            if ( isset( $slide['slide_image']['id'] ) && absint( $slide['slide_image']['id'] ) > 0 ) {
-                $image_alt = get_post_meta( absint( $slide['slide_image']['id'] ), '_wp_attachment_image_alt', true );
-                $image_alt = is_string( $image_alt ) ? $image_alt : '';
-            }
-
-            $title       = isset( $slide['slide_title'] ) ? $slide['slide_title'] : '';
-            $description = isset( $slide['slide_description'] ) ? $slide['slide_description'] : '';
-            $button_text = isset( $slide['slide_button_text'] ) ? $slide['slide_button_text'] : '';
-            $link        = isset( $slide['slide_link'] ) && is_array( $slide['slide_link'] ) ? $slide['slide_link'] : array();
-            $has_link    = isset( $link['url'] ) && '' !== $link['url'];
-            $slide_source = isset( $slide['slide_source'] ) ? $slide['slide_source'] : 'manual';
-
-            $button_key = 'slide_button_' . $uid . '_' . $index;
-
-            if ( $has_link ) {
-                $this->add_render_attribute( $button_key, 'href', esc_url( $link['url'] ) );
-                $this->add_render_attribute( $button_key, 'class', 'dc-carousel__button' );
-
-                if ( ! empty( $link['is_external'] ) ) {
-                    $this->add_render_attribute( $button_key, 'target', '_blank' );
-                }
-
-                if ( ! empty( $link['nofollow'] ) ) {
-                    $this->add_render_attribute( $button_key, 'rel', 'nofollow' );
-                }
-            }
-
-            echo '<article class="dc-carousel__slide swiper-slide">';
-            echo '<div class="dc-carousel__card">';
-            echo '<div class="dc-carousel__media">';
-            echo '<img src="' . esc_url( $image_url ) . '" alt="' . esc_attr( $image_alt ) . '" loading="lazy" />';
-            echo '</div>';
-            echo '<div class="dc-carousel__content">';
-
-            if ( '' !== $title ) {
-                echo '<h3 class="dc-carousel__title">' . esc_html( $title ) . '</h3>';
-            }
-
-            if ( '' !== $description ) {
-                echo '<div class="dc-carousel__description">' . wp_kses_post( $description ) . '</div>';
-            }
-
-            $should_render_button = '' !== $button_text && ( $has_link || 'manual' === $slide_source );
-
-            if ( $should_render_button ) {
-                if ( $has_link ) {
-                    echo '<a ' . $this->get_render_attribute_string( $button_key ) . '>' . esc_html( $button_text ) . '</a>';
-                } else {
-                    echo '<span class="dc-carousel__button dc-carousel__button--static">' . esc_html( $button_text ) . '</span>';
-                }
-            }
-
-            echo '</div>';
-            echo '</div>';
-            echo '</article>';
+        if ( $alternate_ticker_rows ) {
+            $wrapper_classes .= ' dc-carousel--alt-ticker';
         }
 
-        echo '</div>';
-        echo '</div>';
+        echo '<div class="' . esc_attr( $wrapper_classes ) . '" id="' . esc_attr( $uid ) . '" data-dc-config="' . esc_attr( wp_json_encode( $config ) ) . '">';
+        if ( $alternate_ticker_rows ) {
+            echo '<div class="dc-carousel__ticker-rows">';
 
-        if ( $show_arrows ) {
+            echo '<div class="dc-carousel__ticker-row dc-carousel__ticker-row--top">';
+            echo '<div class="dc-carousel__swiper dc-carousel__swiper--top swiper">';
+            echo '<div class="swiper-wrapper">';
+            $this->render_swiper_slides( $top_row_slides, $uid, 'top', $gallery_show_title, $gallery_show_description, $gallery_show_button );
+            echo '</div>';
+            echo '</div>';
+            echo '</div>';
+
+            echo '<div class="dc-carousel__ticker-row dc-carousel__ticker-row--bottom">';
+            echo '<div class="dc-carousel__swiper dc-carousel__swiper--bottom swiper">';
+            echo '<div class="swiper-wrapper">';
+            $this->render_swiper_slides( $bottom_row_slides, $uid, 'bottom', $gallery_show_title, $gallery_show_description, $gallery_show_button );
+            echo '</div>';
+            echo '</div>';
+            echo '</div>';
+
+            echo '</div>';
+        } else {
+            echo '<div class="dc-carousel__swiper swiper">';
+            echo '<div class="swiper-wrapper">';
+            $this->render_swiper_slides( $slides, $uid, 'main', $gallery_show_title, $gallery_show_description, $gallery_show_button );
+            echo '</div>';
+            echo '</div>';
+        }
+
+        if ( $effective_show_arrows ) {
             echo '<button type="button" class="dc-carousel__arrow dc-carousel__arrow--prev" id="' . esc_attr( $prev_button ) . '" aria-label="' . esc_attr__( 'Previous slide', 'dope-carousel' ) . '">';
             echo '<span aria-hidden="true">&#10094;</span>';
             echo '</button>';
@@ -1327,11 +1359,130 @@ class Dope_Carousel_Widget extends Widget_Base {
             echo '</button>';
         }
 
-        if ( $show_dots ) {
+        if ( $effective_show_dots ) {
             echo '<div class="dc-carousel__pagination swiper-pagination" id="' . esc_attr( $pagination_id ) . '" aria-label="' . esc_attr__( 'Carousel pagination', 'dope-carousel' ) . '"></div>';
         }
 
         echo '</div>';
+    }
+
+    private function split_slides_for_alternate_ticker( array $slides ): array {
+        $count = count( $slides );
+
+        if ( $count < 2 ) {
+            return array(
+                'top'    => $slides,
+                'bottom' => array(),
+            );
+        }
+
+        $top_count = (int) ceil( $count / 2 );
+
+        return array(
+            'top'    => array_slice( $slides, 0, $top_count ),
+            'bottom' => array_slice( $slides, $top_count ),
+        );
+    }
+
+    private function render_swiper_slides(
+        array $slides,
+        string $uid,
+        string $key_prefix,
+        bool $gallery_show_title,
+        bool $gallery_show_description,
+        bool $gallery_show_button
+    ): void {
+        foreach ( $slides as $index => $slide ) {
+            $this->render_single_slide(
+                $slide,
+                $uid,
+                $key_prefix . '_' . (string) $index,
+                $gallery_show_title,
+                $gallery_show_description,
+                $gallery_show_button
+            );
+        }
+    }
+
+    private function render_single_slide(
+        array $slide,
+        string $uid,
+        string $key_suffix,
+        bool $gallery_show_title,
+        bool $gallery_show_description,
+        bool $gallery_show_button
+    ): void {
+        $image_url = '';
+
+        if ( isset( $slide['slide_image']['url'] ) && '' !== $slide['slide_image']['url'] ) {
+            $image_url = $slide['slide_image']['url'];
+        }
+
+        if ( '' === $image_url ) {
+            $image_url = Utils::get_placeholder_image_src();
+        }
+
+        $image_alt = '';
+        if ( isset( $slide['slide_image']['id'] ) && absint( $slide['slide_image']['id'] ) > 0 ) {
+            $image_alt = get_post_meta( absint( $slide['slide_image']['id'] ), '_wp_attachment_image_alt', true );
+            $image_alt = is_string( $image_alt ) ? $image_alt : '';
+        }
+
+        $title        = isset( $slide['slide_title'] ) ? $slide['slide_title'] : '';
+        $description  = isset( $slide['slide_description'] ) ? $slide['slide_description'] : '';
+        $button_text  = isset( $slide['slide_button_text'] ) ? $slide['slide_button_text'] : '';
+        $link         = isset( $slide['slide_link'] ) && is_array( $slide['slide_link'] ) ? $slide['slide_link'] : array();
+        $has_link     = isset( $link['url'] ) && '' !== $link['url'];
+        $slide_source = isset( $slide['slide_source'] ) ? $slide['slide_source'] : 'manual';
+        $is_gallery   = 'gallery' === $slide_source;
+
+        $show_title       = ! $is_gallery || $gallery_show_title;
+        $show_description = ! $is_gallery || $gallery_show_description;
+        $show_button      = ! $is_gallery || $gallery_show_button;
+
+        $button_key = 'slide_button_' . $uid . '_' . $key_suffix;
+
+        if ( $has_link ) {
+            $this->add_render_attribute( $button_key, 'href', esc_url( $link['url'] ) );
+            $this->add_render_attribute( $button_key, 'class', 'dc-carousel__button' );
+
+            if ( ! empty( $link['is_external'] ) ) {
+                $this->add_render_attribute( $button_key, 'target', '_blank' );
+            }
+
+            if ( ! empty( $link['nofollow'] ) ) {
+                $this->add_render_attribute( $button_key, 'rel', 'nofollow' );
+            }
+        }
+
+        echo '<article class="dc-carousel__slide swiper-slide">';
+        echo '<div class="dc-carousel__card">';
+        echo '<div class="dc-carousel__media">';
+        echo '<img src="' . esc_url( $image_url ) . '" alt="' . esc_attr( $image_alt ) . '" loading="lazy" />';
+        echo '</div>';
+        echo '<div class="dc-carousel__content">';
+
+        if ( $show_title && '' !== $title ) {
+            echo '<h3 class="dc-carousel__title">' . esc_html( $title ) . '</h3>';
+        }
+
+        if ( $show_description && '' !== $description ) {
+            echo '<div class="dc-carousel__description">' . wp_kses_post( $description ) . '</div>';
+        }
+
+        $should_render_button = $show_button && '' !== $button_text && ( $has_link || ! $is_gallery );
+
+        if ( $should_render_button ) {
+            if ( $has_link ) {
+                echo '<a ' . $this->get_render_attribute_string( $button_key ) . '>' . esc_html( $button_text ) . '</a>';
+            } else {
+                echo '<span class="dc-carousel__button dc-carousel__button--static">' . esc_html( $button_text ) . '</span>';
+            }
+        }
+
+        echo '</div>';
+        echo '</div>';
+        echo '</article>';
     }
 
     private function build_gallery_slides( array $gallery_items ): array {

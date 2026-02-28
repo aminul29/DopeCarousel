@@ -16,6 +16,11 @@ Custom Elementor carousel widget plugin powered by Swiper.
   - Description
   - Carousel button text (custom media field)
   - Carousel button link (custom media field)
+- Gallery mode visibility toggles:
+  - Show/Hide title
+  - Show/Hide description
+  - Show/Hide button
+- Double-row ticker supports alternate row movement (top and bottom rows move in opposite directions)
 - Style controls for container, card, image, title, description, button, arrows, and pagination
 - Fade fallback behavior for unsupported layouts (auto-fallback to Slide)
 
@@ -36,3 +41,5 @@ Custom Elementor carousel widget plugin powered by Swiper.
 - You can edit per-image button fields from Media Library attachment details:
   - `Carousel Button Text`
   - `Carousel Button Link`
+- Alternate direction movement is applied for `Layout = Double Row` + `Slide Style = Ticker`.
+- Manual mode behavior remains unchanged.

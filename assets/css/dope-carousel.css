@@ -10,6 +10,20 @@
   overflow: hidden;
 }
 
+.dc-carousel--alt-ticker .dc-carousel__ticker-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.dc-carousel--alt-ticker .dc-carousel__ticker-row {
+  width: 100%;
+}
+
+.dc-carousel--alt-ticker .dc-carousel__swiper {
+  overflow: hidden;
+}
+
 .dc-carousel .swiper-wrapper {
   align-items: stretch;
 }
@@ -119,6 +133,11 @@
 
 .dc-carousel--style-ticker .swiper-wrapper {
   transition-timing-function: linear !important;
+}
+
+.dc-carousel--alt-ticker .dc-carousel__arrow,
+.dc-carousel--alt-ticker .dc-carousel__pagination {
+  display: none;
 }
 
 @media (max-width: 1024px) {

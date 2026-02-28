@@ -125,6 +125,66 @@
     return options;
   }
 
+  function buildTickerRowOptions(config, reverseDirection) {
+    var slidesPerViewMobile = safeDeviceValue(config.slidesPerView, 'mobile', 1);
+    var slidesPerViewTablet = safeDeviceValue(config.slidesPerView, 'tablet', 2);
+    var slidesPerViewDesktop = safeDeviceValue(config.slidesPerView, 'desktop', 3);
+
+    var spaceMobile = safeDeviceValue(config.spaceBetween, 'mobile', 12);
+    var spaceTablet = safeDeviceValue(config.spaceBetween, 'tablet', 18);
+    var spaceDesktop = safeDeviceValue(config.spaceBetween, 'desktop', 24);
+
+    var tickerSpeed = toNumber(config.tickerSpeed, 4500);
+
+    return {
+      slidesPerView: slidesPerViewMobile,
+      spaceBetween: spaceMobile,
+      speed: tickerSpeed,
+      loop: true,
+      allowTouchMove: config.drag !== false,
+      grabCursor: config.drag !== false,
+      watchOverflow: true,
+      autoplay: {
+        delay: 0,
+        disableOnInteraction: false,
+        reverseDirection: reverseDirection,
+        pauseOnMouseEnter: false,
+      },
+      freeMode: {
+        enabled: true,
+        momentum: false,
+      },
+      breakpoints: {
+        768: {
+          slidesPerView: slidesPerViewTablet,
+          spaceBetween: spaceTablet,
+        },
+        1025: {
+          slidesPerView: slidesPerViewDesktop,
+          spaceBetween: spaceDesktop,
+        },
+      },
+    };
+  }
+
+  function initAlternateTicker(root, config) {
+    var topSwiperElement = root.querySelector('.dc-carousel__swiper--top');
+    var bottomSwiperElement = root.querySelector('.dc-carousel__swiper--bottom');
+
+    if (!topSwiperElement || !bottomSwiperElement) {
+      return false;
+    }
+
+    var topReversed = config.tickerDirection === 'reverse';
+    var bottomReversed = !topReversed;
+
+    root.dcSwiperTop = new window.Swiper(topSwiperElement, buildTickerRowOptions(config, topReversed));
+    root.dcSwiperBottom = new window.Swiper(bottomSwiperElement, buildTickerRowOptions(config, bottomReversed));
+    root.classList.add('dc-carousel--ticker-ready');
+
+    return true;
+  }
+
   function initCarousel(root) {
     if (!root || root.dataset.ready === '1') {
       return;
@@ -137,6 +197,13 @@
     var config = parseConfig(root);
     if (!config) {
       return;
+    }
+
+    if (config.alternateTickerRows) {
+      if (initAlternateTicker(root, config)) {
+        root.dataset.ready = '1';
+        return;
+      }
     }
 
     var swiperElement = root.querySelector('.dc-carousel__swiper');
