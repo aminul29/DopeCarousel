@@ -1,0 +1,166 @@
+(function () {
+  function toNumber(value, fallback) {
+    var parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : fallback;
+  }
+
+  function safeDeviceValue(obj, key, fallback) {
+    if (!obj || typeof obj !== 'object') {
+      return fallback;
+    }
+    return toNumber(obj[key], fallback);
+  }
+
+  function parseConfig(root) {
+    var raw = root.getAttribute('data-dc-config');
+    if (!raw) {
+      return null;
+    }
+
+    try {
+      return JSON.parse(raw);
+    } catch (error) {
+      return null;
+    }
+  }
+
+  function buildOptions(root, config) {
+    var layout = config.layout || 'slider';
+    var style = config.style || 'slide';
+    var isTicker = style === 'ticker';
+
+    if (style === 'fade' && layout !== 'slider') {
+      style = 'slide';
+    }
+
+    var rows = layout === 'double_row' ? 2 : 1;
+
+    var slidesPerViewMobile = safeDeviceValue(config.slidesPerView, 'mobile', 1);
+    var slidesPerViewTablet = safeDeviceValue(config.slidesPerView, 'tablet', 2);
+    var slidesPerViewDesktop = safeDeviceValue(config.slidesPerView, 'desktop', 3);
+
+    var spaceMobile = safeDeviceValue(config.spaceBetween, 'mobile', 12);
+    var spaceTablet = safeDeviceValue(config.spaceBetween, 'tablet', 18);
+    var spaceDesktop = safeDeviceValue(config.spaceBetween, 'desktop', 24);
+
+    var speed = toNumber(config.speed, 700);
+    var tickerSpeed = toNumber(config.tickerSpeed, 4500);
+
+    var options = {
+      slidesPerView: slidesPerViewMobile,
+      spaceBetween: spaceMobile,
+      speed: isTicker ? tickerSpeed : speed,
+      loop: isTicker ? true : Boolean(config.loop),
+      allowTouchMove: config.drag !== false,
+      grabCursor: config.drag !== false,
+      watchOverflow: true,
+      effect: style === 'fade' ? 'fade' : 'slide',
+      breakpoints: {
+        768: {
+          slidesPerView: slidesPerViewTablet,
+          spaceBetween: spaceTablet,
+          grid: {
+            rows: rows,
+            fill: 'row',
+          },
+        },
+        1025: {
+          slidesPerView: slidesPerViewDesktop,
+          spaceBetween: spaceDesktop,
+          grid: {
+            rows: rows,
+            fill: 'row',
+          },
+        },
+      },
+      grid: {
+        rows: rows,
+        fill: 'row',
+      },
+    };
+
+    if (style === 'fade') {
+      options.fadeEffect = {
+        crossFade: true,
+      };
+    }
+
+    if (isTicker) {
+      options.autoplay = {
+        delay: 0,
+        disableOnInteraction: false,
+        reverseDirection: config.tickerDirection === 'reverse',
+        pauseOnMouseEnter: false,
+      };
+      options.freeMode = {
+        enabled: true,
+        momentum: false,
+      };
+    } else if (config.autoplay) {
+      options.autoplay = {
+        delay: toNumber(config.autoplayDelay, 3000),
+        disableOnInteraction: false,
+        pauseOnMouseEnter: Boolean(config.pauseOnHover),
+      };
+    }
+
+    if (config.arrows && config.selectors && config.selectors.next && config.selectors.prev) {
+      options.navigation = {
+        nextEl: config.selectors.next,
+        prevEl: config.selectors.prev,
+      };
+    }
+
+    if (config.dots && config.selectors && config.selectors.pagination) {
+      options.pagination = {
+        el: config.selectors.pagination,
+        clickable: true,
+      };
+    }
+
+    if (root.classList.contains('dc-carousel--style-ticker')) {
+      root.classList.add('dc-carousel--ticker-ready');
+    }
+
+    return options;
+  }
+
+  function initCarousel(root) {
+    if (!root || root.dataset.ready === '1') {
+      return;
+    }
+
+    if (typeof window.Swiper !== 'function') {
+      return;
+    }
+
+    var config = parseConfig(root);
+    if (!config) {
+      return;
+    }
+
+    var swiperElement = root.querySelector('.dc-carousel__swiper');
+    if (!swiperElement) {
+      return;
+    }
+
+    var options = buildOptions(root, config);
+    root.dataset.ready = '1';
+    root.dcSwiper = new window.Swiper(swiperElement, options);
+  }
+
+  function initScope(scope) {
+    var root = scope || document;
+    root.querySelectorAll('.dc-carousel').forEach(initCarousel);
+  }
+
+  if (window.elementorFrontend && window.elementorFrontend.hooks) {
+    window.elementorFrontend.hooks.addAction('frontend/element_ready/dope_carousel.default', function ($scope) {
+      initScope($scope[0]);
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    initScope(document);
+  });
+})();
