@@ -7,7 +7,15 @@ Custom Elementor carousel widget plugin powered by Swiper.
 - Layouts: Slider, Single Row Carousel, Double Row Carousel
 - Slide styles: Slide, Fade, Ticker
 - Ticker direction control (left-to-right / right-to-left)
-- Repeater-based slides (image, title, description, button text, link)
+- Dual content sources:
+  - Manual mode: repeater-based slides (image, title, description, button text, link)
+  - Gallery mode: bulk image selection from gallery control
+- Gallery mode reads per-image metadata from Media Library:
+  - Title (attachment title)
+  - Caption
+  - Description
+  - Carousel button text (custom media field)
+  - Carousel button link (custom media field)
 - Style controls for container, card, image, title, description, button, arrows, and pagination
 - Fade fallback behavior for unsupported layouts (auto-fallback to Slide)
 
@@ -23,3 +31,8 @@ Custom Elementor carousel widget plugin powered by Swiper.
 
 ## Notes
 - Fade effect works only with the Slider layout. If Fade is selected with Single Row or Double Row, the frontend automatically uses Slide.
+- In Gallery mode, Dope Carousel uses Media Library metadata as the content source of truth.
+- If Gallery mode has no selected images, the widget falls back to existing manual repeater slides for backward compatibility.
+- You can edit per-image button fields from Media Library attachment details:
+  - `Carousel Button Text`
+  - `Carousel Button Link`

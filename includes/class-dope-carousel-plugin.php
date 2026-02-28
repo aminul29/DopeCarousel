@@ -41,6 +41,8 @@ final class Dope_Carousel_Plugin {
         add_action( 'elementor/widgets/register', array( $this, 'register_widgets' ) );
         add_action( 'wp_enqueue_scripts', array( $this, 'register_assets' ) );
         add_action( 'elementor/editor/after_enqueue_scripts', array( $this, 'register_assets' ) );
+        add_filter( 'attachment_fields_to_edit', array( $this, 'add_media_carousel_fields' ), 10, 2 );
+        add_filter( 'attachment_fields_to_save', array( $this, 'save_media_carousel_fields' ), 10, 2 );
     }
 
     public function register_assets(): void {
@@ -78,6 +80,51 @@ final class Dope_Carousel_Plugin {
     public function register_widgets( $widgets_manager ): void {
         require_once DOPE_CAROUSEL_PATH . '/includes/widgets/class-dope-carousel-widget.php';
         $widgets_manager->register( new Dope_Carousel_Widget() );
+    }
+
+    public function add_media_carousel_fields( array $form_fields, WP_Post $post ): array {
+        $button_text = get_post_meta( $post->ID, '_dc_carousel_button_text', true );
+        $button_link = get_post_meta( $post->ID, '_dc_carousel_button_link', true );
+
+        $form_fields['dc_carousel_button_text'] = array(
+            'label' => esc_html__( 'Carousel Button Text', 'dope-carousel' ),
+            'input' => 'text',
+            'value' => is_string( $button_text ) ? $button_text : '',
+            'helps' => esc_html__( 'Used by Dope Carousel when Content Source is Gallery.', 'dope-carousel' ),
+        );
+
+        $form_fields['dc_carousel_button_link'] = array(
+            'label' => esc_html__( 'Carousel Button Link', 'dope-carousel' ),
+            'input' => 'text',
+            'value' => is_string( $button_link ) ? $button_link : '',
+            'helps' => esc_html__( 'Add a full URL (e.g. https://example.com). Used in Gallery mode.', 'dope-carousel' ),
+        );
+
+        return $form_fields;
+    }
+
+    public function save_media_carousel_fields( array $post, array $attachment ): array {
+        if ( isset( $attachment['dc_carousel_button_text'] ) ) {
+            $button_text = sanitize_text_field( wp_unslash( (string) $attachment['dc_carousel_button_text'] ) );
+
+            if ( '' !== $button_text ) {
+                update_post_meta( $post['ID'], '_dc_carousel_button_text', $button_text );
+            } else {
+                delete_post_meta( $post['ID'], '_dc_carousel_button_text' );
+            }
+        }
+
+        if ( isset( $attachment['dc_carousel_button_link'] ) ) {
+            $button_link = esc_url_raw( trim( wp_unslash( (string) $attachment['dc_carousel_button_link'] ) ) );
+
+            if ( '' !== $button_link ) {
+                update_post_meta( $post['ID'], '_dc_carousel_button_link', $button_link );
+            } else {
+                delete_post_meta( $post['ID'], '_dc_carousel_button_link' );
+            }
+        }
+
+        return $post;
     }
 
     public function admin_notice_missing_elementor(): void {

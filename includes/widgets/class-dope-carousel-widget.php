@@ -57,6 +57,31 @@ class Dope_Carousel_Widget extends Widget_Base {
             )
         );
 
+        $this->add_control(
+            'content_source',
+            array(
+                'label'   => esc_html__( 'Content Source', 'dope-carousel' ),
+                'type'    => Controls_Manager::SELECT,
+                'default' => 'manual',
+                'options' => array(
+                    'manual'  => esc_html__( 'Manual', 'dope-carousel' ),
+                    'gallery' => esc_html__( 'Gallery', 'dope-carousel' ),
+                ),
+            )
+        );
+
+        $this->add_control(
+            'gallery_images',
+            array(
+                'label'       => esc_html__( 'Gallery Images', 'dope-carousel' ),
+                'type'        => Controls_Manager::GALLERY,
+                'condition'   => array(
+                    'content_source' => 'gallery',
+                ),
+                'description' => esc_html__( 'Bulk select images. Title, caption, description, button text, and button link are read from Media Library metadata.', 'dope-carousel' ),
+            )
+        );
+
         $repeater = new Repeater();
 
         $repeater->add_control(
@@ -138,6 +163,9 @@ class Dope_Carousel_Widget extends Widget_Base {
                     ),
                 ),
                 'title_field' => '{{{ slide_title }}}',
+                'condition'   => array(
+                    'content_source' => 'manual',
+                ),
             )
         );
 
@@ -1130,6 +1158,16 @@ class Dope_Carousel_Widget extends Widget_Base {
     protected function render(): void {
         $settings = $this->get_settings_for_display();
         $slides   = isset( $settings['slides'] ) && is_array( $settings['slides'] ) ? $settings['slides'] : array();
+        $source   = isset( $settings['content_source'] ) && 'gallery' === $settings['content_source'] ? 'gallery' : 'manual';
+
+        if ( 'gallery' === $source ) {
+            $gallery_items  = isset( $settings['gallery_images'] ) && is_array( $settings['gallery_images'] ) ? $settings['gallery_images'] : array();
+            $gallery_slides = $this->build_gallery_slides( $gallery_items );
+
+            if ( ! empty( $gallery_slides ) ) {
+                $slides = $gallery_slides;
+            }
+        }
 
         if ( empty( $slides ) ) {
             return;
@@ -1230,6 +1268,7 @@ class Dope_Carousel_Widget extends Widget_Base {
             $button_text = isset( $slide['slide_button_text'] ) ? $slide['slide_button_text'] : '';
             $link        = isset( $slide['slide_link'] ) && is_array( $slide['slide_link'] ) ? $slide['slide_link'] : array();
             $has_link    = isset( $link['url'] ) && '' !== $link['url'];
+            $slide_source = isset( $slide['slide_source'] ) ? $slide['slide_source'] : 'manual';
 
             $button_key = 'slide_button_' . $uid . '_' . $index;
 
@@ -1261,7 +1300,9 @@ class Dope_Carousel_Widget extends Widget_Base {
                 echo '<div class="dc-carousel__description">' . wp_kses_post( $description ) . '</div>';
             }
 
-            if ( '' !== $button_text ) {
+            $should_render_button = '' !== $button_text && ( $has_link || 'manual' === $slide_source );
+
+            if ( $should_render_button ) {
                 if ( $has_link ) {
                     echo '<a ' . $this->get_render_attribute_string( $button_key ) . '>' . esc_html( $button_text ) . '</a>';
                 } else {
@@ -1291,6 +1332,72 @@ class Dope_Carousel_Widget extends Widget_Base {
         }
 
         echo '</div>';
+    }
+
+    private function build_gallery_slides( array $gallery_items ): array {
+        $slides = array();
+
+        foreach ( $gallery_items as $item ) {
+            $attachment_id = isset( $item['id'] ) ? absint( $item['id'] ) : 0;
+            if ( $attachment_id <= 0 ) {
+                continue;
+            }
+
+            $attachment = get_post( $attachment_id );
+            if ( ! $attachment || 'attachment' !== $attachment->post_type || ! wp_attachment_is_image( $attachment_id ) ) {
+                continue;
+            }
+
+            $meta_payload = $this->get_attachment_meta_payload( $attachment_id );
+            $image_url    = wp_get_attachment_image_url( $attachment_id, 'full' );
+
+            if ( ! is_string( $image_url ) || '' === $image_url ) {
+                continue;
+            }
+
+            $description_html = '';
+
+            if ( '' !== $meta_payload['caption'] ) {
+                $description_html .= '<p class="dc-carousel__caption">' . esc_html( $meta_payload['caption'] ) . '</p>';
+            }
+
+            if ( '' !== $meta_payload['description'] ) {
+                $description_html .= wpautop( wp_kses_post( $meta_payload['description'] ) );
+            }
+
+            $slides[] = array(
+                'slide_image'       => array(
+                    'id'  => $attachment_id,
+                    'url' => $image_url,
+                ),
+                'slide_title'       => $meta_payload['title'],
+                'slide_description' => $description_html,
+                'slide_button_text' => $meta_payload['button_text'],
+                'slide_link'        => array(
+                    'url' => $meta_payload['button_link'],
+                ),
+                'slide_source'      => 'gallery',
+            );
+        }
+
+        return $slides;
+    }
+
+    private function get_attachment_meta_payload( int $attachment_id ): array {
+        $title       = get_the_title( $attachment_id );
+        $caption     = wp_get_attachment_caption( $attachment_id );
+        $attachment  = get_post( $attachment_id );
+        $description = $attachment instanceof WP_Post ? (string) $attachment->post_content : '';
+        $button_text = get_post_meta( $attachment_id, '_dc_carousel_button_text', true );
+        $button_link = get_post_meta( $attachment_id, '_dc_carousel_button_link', true );
+
+        return array(
+            'title'       => is_string( $title ) ? $title : '',
+            'caption'     => is_string( $caption ) ? $caption : '',
+            'description' => is_string( $description ) ? $description : '',
+            'button_text' => is_string( $button_text ) ? sanitize_text_field( $button_text ) : '',
+            'button_link' => is_string( $button_link ) ? esc_url_raw( $button_link ) : '',
+        );
     }
 
     private function is_enabled( array $settings, string $key, bool $default = false ): bool {

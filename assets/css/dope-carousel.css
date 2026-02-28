@@ -53,6 +53,12 @@
   margin-bottom: 0;
 }
 
+.dc-carousel__caption {
+  margin: 0 0 8px;
+  font-size: 0.9em;
+  opacity: 0.8;
+}
+
 .dc-carousel__button {
   display: inline-block;
   width: fit-content;
