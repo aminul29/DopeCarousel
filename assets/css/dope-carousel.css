@@ -1,6 +1,7 @@
 .dc-carousel {
   --dc-arrow-size: 44px;
   --dc-bullet-gap: 8px;
+  --dc-vertical-carousel-height: 640px;
   position: relative;
   width: 100%;
 }
@@ -10,11 +11,19 @@
   overflow: hidden;
 }
 
+.dc-carousel--direction-vertical .dc-carousel__swiper {
+  height: var(--dc-vertical-carousel-height);
+}
+
 /* Editor-safe fallback before Swiper init to avoid raw unstructured image output. */
 .dc-carousel__swiper:not(.swiper-initialized) .swiper-wrapper {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 16px;
+}
+
+.dc-carousel--direction-vertical .dc-carousel__swiper:not(.swiper-initialized) .swiper-wrapper {
+  grid-template-columns: 1fr;
 }
 
 .dc-carousel__swiper:not(.swiper-initialized) .swiper-slide {
@@ -120,6 +129,21 @@
 
 .dc-carousel__arrow--next {
   right: 8px;
+}
+
+.dc-carousel--direction-vertical .dc-carousel__arrow {
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%);
+}
+
+.dc-carousel--direction-vertical .dc-carousel__arrow--prev {
+  top: 8px;
+}
+
+.dc-carousel--direction-vertical .dc-carousel__arrow--next {
+  top: auto;
+  bottom: 8px;
 }
 
 .dc-carousel__arrow.swiper-button-disabled {

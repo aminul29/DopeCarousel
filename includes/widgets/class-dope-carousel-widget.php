@@ -295,6 +295,63 @@ class Dope_Carousel_Widget extends Widget_Base {
         );
 
         $this->add_control(
+            'carousel_direction',
+            array(
+                'label'     => esc_html__( 'Carousel Direction', 'dope-carousel' ),
+                'type'      => Controls_Manager::CHOOSE,
+                'default'   => 'horizontal',
+                'options'   => array(
+                    'horizontal' => array(
+                        'title' => esc_html__( 'Horizontal', 'dope-carousel' ),
+                        'icon'  => 'eicon-arrow-right',
+                    ),
+                    'vertical'   => array(
+                        'title' => esc_html__( 'Vertical', 'dope-carousel' ),
+                        'icon'  => 'eicon-arrow-down',
+                    ),
+                ),
+                'toggle'    => false,
+                'condition' => array(
+                    'layout' => 'single_row',
+                ),
+            )
+        );
+
+        $this->add_responsive_control(
+            'vertical_carousel_height',
+            array(
+                'label'      => esc_html__( 'Vertical Carousel Height', 'dope-carousel' ),
+                'type'       => Controls_Manager::SLIDER,
+                'size_units' => array( 'px' ),
+                'default'    => array(
+                    'size' => 640,
+                    'unit' => 'px',
+                ),
+                'tablet_default' => array(
+                    'size' => 520,
+                    'unit' => 'px',
+                ),
+                'mobile_default' => array(
+                    'size' => 420,
+                    'unit' => 'px',
+                ),
+                'range'      => array(
+                    'px' => array(
+                        'min' => 240,
+                        'max' => 1400,
+                    ),
+                ),
+                'selectors'  => array(
+                    '{{WRAPPER}} .dc-carousel' => '--dc-vertical-carousel-height: {{SIZE}}{{UNIT}};',
+                ),
+                'condition'  => array(
+                    'layout'             => 'single_row',
+                    'carousel_direction' => 'vertical',
+                ),
+            )
+        );
+
+        $this->add_control(
             'speed',
             array(
                 'label'       => esc_html__( 'Transition Speed (ms)', 'dope-carousel' ),
@@ -412,16 +469,16 @@ class Dope_Carousel_Widget extends Widget_Base {
         $this->add_control(
             'ticker_direction',
             array(
-                'label'   => esc_html__( 'Ticker Direction', 'dope-carousel' ),
+                'label'   => esc_html__( 'Ticker Flow', 'dope-carousel' ),
                 'type'    => Controls_Manager::CHOOSE,
                 'default' => 'normal',
                 'options' => array(
                     'normal' => array(
-                        'title' => esc_html__( 'Left to Right', 'dope-carousel' ),
+                        'title' => esc_html__( 'Forward', 'dope-carousel' ),
                         'icon'  => 'eicon-arrow-right',
                     ),
                     'reverse' => array(
-                        'title' => esc_html__( 'Right to Left', 'dope-carousel' ),
+                        'title' => esc_html__( 'Reverse', 'dope-carousel' ),
                         'icon'  => 'eicon-arrow-left',
                     ),
                 ),
@@ -1226,6 +1283,14 @@ class Dope_Carousel_Widget extends Widget_Base {
             ? $settings['slide_style']
             : 'slide';
 
+        $carousel_direction = isset( $settings['carousel_direction'] ) && in_array( $settings['carousel_direction'], array( 'horizontal', 'vertical' ), true )
+            ? $settings['carousel_direction']
+            : 'horizontal';
+
+        if ( 'single_row' !== $layout ) {
+            $carousel_direction = 'horizontal';
+        }
+
         $gallery_show_title       = $this->is_enabled( $settings, 'gallery_show_title', true );
         $gallery_show_description = $this->is_enabled( $settings, 'gallery_show_description', true );
         $gallery_show_button      = $this->is_enabled( $settings, 'gallery_show_button', true );
@@ -1283,6 +1348,7 @@ class Dope_Carousel_Widget extends Widget_Base {
 
         $config = array(
             'layout'         => $layout,
+            'direction'      => $carousel_direction,
             'style'          => $slide_style,
             'slidesPerView'  => array(
                 'desktop' => $slides_per_view_desktop,
@@ -1315,7 +1381,10 @@ class Dope_Carousel_Widget extends Widget_Base {
             ),
         );
 
-        $wrapper_classes = 'dc-carousel dc-carousel--layout-' . $layout . ' dc-carousel--style-' . $slide_style;
+        $wrapper_classes = 'dc-carousel dc-carousel--layout-' . $layout . ' dc-carousel--style-' . $slide_style . ' dc-carousel--direction-' . $carousel_direction;
+
+        $prev_arrow = 'vertical' === $carousel_direction ? '&#9650;' : '&#10094;';
+        $next_arrow = 'vertical' === $carousel_direction ? '&#9660;' : '&#10095;';
 
         if ( $alternate_ticker_rows ) {
             $wrapper_classes .= ' dc-carousel--alt-ticker';
@@ -1352,10 +1421,10 @@ class Dope_Carousel_Widget extends Widget_Base {
 
         if ( $effective_show_arrows ) {
             echo '<button type="button" class="dc-carousel__arrow dc-carousel__arrow--prev" id="' . esc_attr( $prev_button ) . '" aria-label="' . esc_attr__( 'Previous slide', 'dope-carousel' ) . '">';
-            echo '<span aria-hidden="true">&#10094;</span>';
+            echo '<span aria-hidden="true">' . wp_kses_post( $prev_arrow ) . '</span>';
             echo '</button>';
             echo '<button type="button" class="dc-carousel__arrow dc-carousel__arrow--next" id="' . esc_attr( $next_button ) . '" aria-label="' . esc_attr__( 'Next slide', 'dope-carousel' ) . '">';
-            echo '<span aria-hidden="true">&#10095;</span>';
+            echo '<span aria-hidden="true">' . wp_kses_post( $next_arrow ) . '</span>';
             echo '</button>';
         }
 

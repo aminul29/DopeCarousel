@@ -26,8 +26,10 @@
 
   function buildOptions(root, config) {
     var layout = config.layout || 'slider';
+    var direction = config.direction === 'vertical' ? 'vertical' : 'horizontal';
     var style = config.style || 'slide';
     var isTicker = style === 'ticker';
+    var isVerticalSingleRow = layout === 'single_row' && direction === 'vertical';
 
     if (style === 'fade' && layout !== 'slider') {
       style = 'slide';
@@ -54,30 +56,36 @@
       allowTouchMove: config.drag !== false,
       grabCursor: config.drag !== false,
       watchOverflow: true,
+      direction: isVerticalSingleRow ? 'vertical' : 'horizontal',
       effect: style === 'fade' ? 'fade' : 'slide',
       breakpoints: {
         768: {
           slidesPerView: slidesPerViewTablet,
           spaceBetween: spaceTablet,
-          grid: {
-            rows: rows,
-            fill: 'row',
-          },
         },
         1025: {
           slidesPerView: slidesPerViewDesktop,
           spaceBetween: spaceDesktop,
-          grid: {
-            rows: rows,
-            fill: 'row',
-          },
         },
       },
-      grid: {
+    };
+
+    if (rows > 1) {
+      options.grid = {
         rows: rows,
         fill: 'row',
-      },
-    };
+      };
+
+      options.breakpoints[768].grid = {
+        rows: rows,
+        fill: 'row',
+      };
+
+      options.breakpoints[1025].grid = {
+        rows: rows,
+        fill: 'row',
+      };
+    }
 
     if (style === 'fade') {
       options.fadeEffect = {
