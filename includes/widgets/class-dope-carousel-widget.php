@@ -31,7 +31,7 @@ class Dope_Carousel_Widget extends Widget_Base {
     }
 
     public function get_keywords(): array {
-        return array( 'carousel', 'slider', 'swiper', 'ticker', 'gallery' );
+        return array( 'carousel', 'slider', 'swiper', 'ticker', 'gallery', 'video', 'youtube' );
     }
 
     public function get_style_depends(): array {
@@ -130,12 +130,41 @@ class Dope_Carousel_Widget extends Widget_Base {
         $repeater = new Repeater();
 
         $repeater->add_control(
+            'slide_media_type',
+            array(
+                'label'   => esc_html__( 'Media Type', 'dope-carousel' ),
+                'type'    => Controls_Manager::SELECT,
+                'default' => 'image',
+                'options' => array(
+                    'image'   => esc_html__( 'Image', 'dope-carousel' ),
+                    'youtube' => esc_html__( 'YouTube', 'dope-carousel' ),
+                ),
+            )
+        );
+
+        $repeater->add_control(
             'slide_image',
             array(
                 'label'   => esc_html__( 'Image', 'dope-carousel' ),
                 'type'    => Controls_Manager::MEDIA,
                 'default' => array(
                     'url' => Utils::get_placeholder_image_src(),
+                ),
+                'condition' => array(
+                    'slide_media_type' => 'image',
+                ),
+            )
+        );
+
+        $repeater->add_control(
+            'slide_youtube_url',
+            array(
+                'label'       => esc_html__( 'YouTube URL', 'dope-carousel' ),
+                'type'        => Controls_Manager::TEXT,
+                'placeholder' => 'https://www.youtube.com/watch?v=...',
+                'label_block' => true,
+                'condition'   => array(
+                    'slide_media_type' => 'youtube',
                 ),
             )
         );
@@ -1481,22 +1510,6 @@ class Dope_Carousel_Widget extends Widget_Base {
         bool $gallery_show_description,
         bool $gallery_show_button
     ): void {
-        $image_url = '';
-
-        if ( isset( $slide['slide_image']['url'] ) && '' !== $slide['slide_image']['url'] ) {
-            $image_url = $slide['slide_image']['url'];
-        }
-
-        if ( '' === $image_url ) {
-            $image_url = Utils::get_placeholder_image_src();
-        }
-
-        $image_alt = '';
-        if ( isset( $slide['slide_image']['id'] ) && absint( $slide['slide_image']['id'] ) > 0 ) {
-            $image_alt = get_post_meta( absint( $slide['slide_image']['id'] ), '_wp_attachment_image_alt', true );
-            $image_alt = is_string( $image_alt ) ? $image_alt : '';
-        }
-
         $title        = isset( $slide['slide_title'] ) ? $slide['slide_title'] : '';
         $description  = isset( $slide['slide_description'] ) ? $slide['slide_description'] : '';
         $button_text  = isset( $slide['slide_button_text'] ) ? $slide['slide_button_text'] : '';
@@ -1504,10 +1517,33 @@ class Dope_Carousel_Widget extends Widget_Base {
         $has_link     = isset( $link['url'] ) && '' !== $link['url'];
         $slide_source = isset( $slide['slide_source'] ) ? $slide['slide_source'] : 'manual';
         $is_gallery   = 'gallery' === $slide_source;
+        $media_type   = $this->get_slide_media_type( $slide, $is_gallery );
 
         $show_title       = ! $is_gallery || $gallery_show_title;
         $show_description = ! $is_gallery || $gallery_show_description;
         $show_button      = ! $is_gallery || $gallery_show_button;
+
+        $image_url   = '';
+        $image_alt   = '';
+        $video_embed = '';
+
+        if ( 'youtube' === $media_type ) {
+            $video_url   = isset( $slide['slide_youtube_url'] ) ? (string) $slide['slide_youtube_url'] : '';
+            $video_embed = $this->get_youtube_embed_markup( $video_url );
+        } else {
+            if ( isset( $slide['slide_image']['url'] ) && '' !== $slide['slide_image']['url'] ) {
+                $image_url = $slide['slide_image']['url'];
+            }
+
+            if ( '' === $image_url ) {
+                $image_url = Utils::get_placeholder_image_src();
+            }
+
+            if ( isset( $slide['slide_image']['id'] ) && absint( $slide['slide_image']['id'] ) > 0 ) {
+                $image_alt = get_post_meta( absint( $slide['slide_image']['id'] ), '_wp_attachment_image_alt', true );
+                $image_alt = is_string( $image_alt ) ? $image_alt : '';
+            }
+        }
 
         $button_key = 'slide_button_' . $uid . '_' . $key_suffix;
 
@@ -1526,9 +1562,19 @@ class Dope_Carousel_Widget extends Widget_Base {
 
         echo '<article class="dc-carousel__slide swiper-slide">';
         echo '<div class="dc-carousel__card">';
-        echo '<div class="dc-carousel__media">';
-        echo '<img src="' . esc_url( $image_url ) . '" alt="' . esc_attr( $image_alt ) . '" loading="lazy" />';
-        echo '</div>';
+
+        if ( 'youtube' === $media_type ) {
+            if ( '' !== $video_embed ) {
+                echo '<div class="dc-carousel__media dc-carousel__media--video">';
+                echo $video_embed; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+                echo '</div>';
+            }
+        } else {
+            echo '<div class="dc-carousel__media dc-carousel__media--image">';
+            echo '<img src="' . esc_url( $image_url ) . '" alt="' . esc_attr( $image_alt ) . '" loading="lazy" />';
+            echo '</div>';
+        }
+
         echo '<div class="dc-carousel__content">';
 
         if ( $show_title && '' !== $title ) {
@@ -1586,6 +1632,7 @@ class Dope_Carousel_Widget extends Widget_Base {
             }
 
             $slides[] = array(
+                'slide_media_type'  => 'image',
                 'slide_image'       => array(
                     'id'  => $attachment_id,
                     'url' => $image_url,
@@ -1618,6 +1665,160 @@ class Dope_Carousel_Widget extends Widget_Base {
             'button_text' => is_string( $button_text ) ? sanitize_text_field( $button_text ) : '',
             'button_link' => is_string( $button_link ) ? esc_url_raw( $button_link ) : '',
         );
+    }
+
+    private function get_slide_media_type( array $slide, bool $is_gallery ): string {
+        if ( $is_gallery ) {
+            return 'image';
+        }
+
+        if ( isset( $slide['slide_media_type'] ) && 'youtube' === $slide['slide_media_type'] ) {
+            return 'youtube';
+        }
+
+        return 'image';
+    }
+
+    private function get_youtube_embed_markup( string $url ): string {
+        $embed_url = $this->get_youtube_embed_url( $url );
+
+        if ( '' === $embed_url ) {
+            return '';
+        }
+
+        return sprintf(
+            '<div class="dc-carousel__video"><iframe src="%1$s" title="%2$s" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>',
+            esc_url( $embed_url ),
+            esc_attr__( 'YouTube video player', 'dope-carousel' )
+        );
+    }
+
+    private function get_youtube_embed_url( string $url ): string {
+        $youtube_url = $this->sanitize_youtube_url( $url );
+
+        if ( '' === $youtube_url ) {
+            return '';
+        }
+
+        $oembed_url = $this->get_youtube_embed_url_from_oembed( $youtube_url );
+
+        if ( '' !== $oembed_url ) {
+            return $oembed_url;
+        }
+
+        return $this->build_youtube_embed_url( $youtube_url );
+    }
+
+    private function get_youtube_embed_url_from_oembed( string $url ): string {
+        if ( ! function_exists( 'wp_oembed_get' ) ) {
+            return '';
+        }
+
+        $embed_html = wp_oembed_get( $url );
+
+        if ( ! is_string( $embed_html ) || '' === $embed_html ) {
+            return '';
+        }
+
+        if ( ! preg_match( '/<iframe[^>]+src=["\']([^"\']+)["\']/i', $embed_html, $matches ) ) {
+            return '';
+        }
+
+        $embed_url = isset( $matches[1] ) ? esc_url_raw( $matches[1] ) : '';
+
+        return $this->is_allowed_youtube_embed_url( $embed_url ) ? $embed_url : '';
+    }
+
+    private function build_youtube_embed_url( string $url ): string {
+        $video_id = $this->extract_youtube_video_id( $url );
+
+        if ( '' === $video_id ) {
+            return '';
+        }
+
+        return 'https://www.youtube.com/embed/' . rawurlencode( $video_id );
+    }
+
+    private function sanitize_youtube_url( string $url ): string {
+        $sanitized = esc_url_raw( trim( $url ) );
+
+        if ( '' === $sanitized ) {
+            return '';
+        }
+
+        $parsed_url = wp_parse_url( $sanitized );
+
+        if ( ! is_array( $parsed_url ) || empty( $parsed_url['host'] ) ) {
+            return '';
+        }
+
+        $host = strtolower( (string) $parsed_url['host'] );
+
+        return $this->is_allowed_youtube_host( $host ) ? $sanitized : '';
+    }
+
+    private function is_allowed_youtube_host( string $host ): bool {
+        return 'youtu.be' === $host
+            || 'www.youtu.be' === $host
+            || 'youtube.com' === $host
+            || 'www.youtube.com' === $host
+            || 'm.youtube.com' === $host;
+    }
+
+    private function is_allowed_youtube_embed_url( string $url ): bool {
+        $parsed_url = wp_parse_url( $url );
+
+        if ( ! is_array( $parsed_url ) || empty( $parsed_url['host'] ) ) {
+            return false;
+        }
+
+        $host = strtolower( (string) $parsed_url['host'] );
+
+        return 'www.youtube.com' === $host
+            || 'youtube.com' === $host
+            || 'www.youtube-nocookie.com' === $host
+            || 'youtube-nocookie.com' === $host;
+    }
+
+    private function extract_youtube_video_id( string $url ): string {
+        $parsed_url = wp_parse_url( $url );
+
+        if ( ! is_array( $parsed_url ) || empty( $parsed_url['host'] ) ) {
+            return '';
+        }
+
+        $host = strtolower( (string) $parsed_url['host'] );
+        $path = isset( $parsed_url['path'] ) ? trim( (string) $parsed_url['path'], '/' ) : '';
+
+        if ( 'youtu.be' === $host || 'www.youtu.be' === $host ) {
+            $segments = array_values( array_filter( explode( '/', $path ) ) );
+
+            return isset( $segments[0] ) ? $this->sanitize_youtube_video_id( $segments[0] ) : '';
+        }
+
+        if ( false !== strpos( $host, 'youtube.com' ) ) {
+            if ( isset( $parsed_url['query'] ) ) {
+                parse_str( (string) $parsed_url['query'], $query_args );
+
+                if ( ! empty( $query_args['v'] ) ) {
+                    return $this->sanitize_youtube_video_id( (string) $query_args['v'] );
+                }
+            }
+
+            $segments = array_values( array_filter( explode( '/', $path ) ) );
+
+            if ( isset( $segments[0], $segments[1] ) && in_array( $segments[0], array( 'embed', 'shorts', 'live' ), true ) ) {
+                return $this->sanitize_youtube_video_id( $segments[1] );
+            }
+        }
+
+        return '';
+    }
+
+    private function sanitize_youtube_video_id( string $video_id ): string {
+        $sanitized = preg_replace( '/[^A-Za-z0-9_-]/', '', $video_id );
+
+        return is_string( $sanitized ) ? $sanitized : '';
     }
 
     private function is_enabled( array $settings, string $key, bool $default = false ): bool {
