@@ -231,6 +231,11 @@
       return;
     }
 
+    if (config.layout === 'grid') {
+      root.dataset.ready = '1';
+      return;
+    }
+
     if (config.alternateTickerRows) {
       if (initAlternateTicker(root, config)) {
         root.dataset.ready = '1';

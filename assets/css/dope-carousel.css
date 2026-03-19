@@ -30,6 +30,30 @@
   width: auto !important;
 }
 
+.dc-carousel--layout-grid .dc-carousel__swiper {
+  overflow: visible;
+}
+
+.dc-carousel--layout-grid .dc-carousel__swiper > .swiper-wrapper,
+.dc-carousel--layout-grid .dc-carousel__swiper:not(.swiper-initialized) > .swiper-wrapper {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  column-gap: 24px;
+  row-gap: 24px;
+  align-items: stretch;
+  justify-items: stretch;
+  transform: none !important;
+}
+
+.dc-carousel--layout-grid .dc-carousel__slide {
+  width: auto !important;
+}
+
+.dc-carousel--layout-grid .dc-carousel__arrow,
+.dc-carousel--layout-grid .dc-carousel__pagination {
+  display: none !important;
+}
+
 .dc-carousel--alt-ticker .dc-carousel__ticker-rows {
   display: flex;
   flex-direction: column;

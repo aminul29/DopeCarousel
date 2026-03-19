@@ -265,6 +265,7 @@ class Dope_Carousel_Widget extends Widget_Base {
                     'slider'     => esc_html__( 'Slider', 'dope-carousel' ),
                     'single_row' => esc_html__( 'Single Row Carousel', 'dope-carousel' ),
                     'double_row' => esc_html__( 'Double Row Carousel', 'dope-carousel' ),
+                    'grid'       => esc_html__( 'Grid', 'dope-carousel' ),
                 ),
             )
         );
@@ -280,6 +281,9 @@ class Dope_Carousel_Widget extends Widget_Base {
                     'fade'   => esc_html__( 'Fade', 'dope-carousel' ),
                     'ticker' => esc_html__( 'Ticker', 'dope-carousel' ),
                 ),
+                'condition' => array(
+                    'layout!' => 'grid',
+                ),
             )
         );
 
@@ -290,6 +294,7 @@ class Dope_Carousel_Widget extends Widget_Base {
                 'raw'             => esc_html__( 'Fade works only with Slider layout. Other layouts automatically fallback to Slide effect.', 'dope-carousel' ),
                 'content_classes' => 'elementor-panel-alert elementor-panel-alert-info',
                 'condition'       => array(
+                    'layout!'    => 'grid',
                     'slide_style' => 'fade',
                 ),
             )
@@ -306,6 +311,9 @@ class Dope_Carousel_Widget extends Widget_Base {
                 'min'                => 1,
                 'step'               => 1,
                 'frontend_available' => true,
+                'condition'          => array(
+                    'layout!' => 'grid',
+                ),
             )
         );
 
@@ -320,6 +328,9 @@ class Dope_Carousel_Widget extends Widget_Base {
                 'min'                => 0,
                 'step'               => 1,
                 'frontend_available' => true,
+                'condition'          => array(
+                    'layout!' => 'grid',
+                ),
             )
         );
 
@@ -389,6 +400,9 @@ class Dope_Carousel_Widget extends Widget_Base {
                 'min'         => 100,
                 'step'        => 50,
                 'description' => esc_html__( 'Standard slide/fade animation speed.', 'dope-carousel' ),
+                'condition'   => array(
+                    'layout!' => 'grid',
+                ),
             )
         );
 
@@ -401,6 +415,9 @@ class Dope_Carousel_Widget extends Widget_Base {
                 'label_on'     => esc_html__( 'Yes', 'dope-carousel' ),
                 'label_off'    => esc_html__( 'No', 'dope-carousel' ),
                 'return_value' => 'yes',
+                'condition'    => array(
+                    'layout!' => 'grid',
+                ),
             )
         );
 
@@ -413,6 +430,9 @@ class Dope_Carousel_Widget extends Widget_Base {
                 'label_on'     => esc_html__( 'Yes', 'dope-carousel' ),
                 'label_off'    => esc_html__( 'No', 'dope-carousel' ),
                 'return_value' => 'yes',
+                'condition'    => array(
+                    'layout!' => 'grid',
+                ),
             )
         );
 
@@ -425,6 +445,7 @@ class Dope_Carousel_Widget extends Widget_Base {
                 'min'       => 0,
                 'step'      => 100,
                 'condition' => array(
+                    'layout!'      => 'grid',
                     'autoplay'     => 'yes',
                     'slide_style!' => 'ticker',
                 ),
@@ -441,6 +462,7 @@ class Dope_Carousel_Widget extends Widget_Base {
                 'label_off'    => esc_html__( 'No', 'dope-carousel' ),
                 'return_value' => 'yes',
                 'condition'    => array(
+                    'layout!' => 'grid',
                     'autoplay' => 'yes',
                 ),
             )
@@ -455,6 +477,9 @@ class Dope_Carousel_Widget extends Widget_Base {
                 'label_on'     => esc_html__( 'Yes', 'dope-carousel' ),
                 'label_off'    => esc_html__( 'No', 'dope-carousel' ),
                 'return_value' => 'yes',
+                'condition'    => array(
+                    'layout!' => 'grid',
+                ),
             )
         );
 
@@ -467,6 +492,9 @@ class Dope_Carousel_Widget extends Widget_Base {
                 'label_on'     => esc_html__( 'Yes', 'dope-carousel' ),
                 'label_off'    => esc_html__( 'No', 'dope-carousel' ),
                 'return_value' => 'yes',
+                'condition'    => array(
+                    'layout!' => 'grid',
+                ),
             )
         );
 
@@ -479,6 +507,9 @@ class Dope_Carousel_Widget extends Widget_Base {
                 'label_on'     => esc_html__( 'Yes', 'dope-carousel' ),
                 'label_off'    => esc_html__( 'No', 'dope-carousel' ),
                 'return_value' => 'yes',
+                'condition'    => array(
+                    'layout!' => 'grid',
+                ),
             )
         );
 
@@ -490,6 +521,7 @@ class Dope_Carousel_Widget extends Widget_Base {
                 'label'     => esc_html__( 'Ticker Settings', 'dope-carousel' ),
                 'tab'       => Controls_Manager::TAB_CONTENT,
                 'condition' => array(
+                    'layout!'    => 'grid',
                     'slide_style' => 'ticker',
                 ),
             )
@@ -532,6 +564,7 @@ class Dope_Carousel_Widget extends Widget_Base {
 
     private function register_style_controls(): void {
         $this->register_style_container_controls();
+        $this->register_style_grid_controls();
         $this->register_style_slide_controls();
         $this->register_style_image_controls();
         $this->register_style_title_controls();
@@ -539,6 +572,171 @@ class Dope_Carousel_Widget extends Widget_Base {
         $this->register_style_button_controls();
         $this->register_style_navigation_controls();
         $this->register_style_pagination_controls();
+    }
+
+    private function register_style_grid_controls(): void {
+        $this->start_controls_section(
+            'section_style_grid_layout',
+            array(
+                'label'     => esc_html__( 'Grid Layout', 'dope-carousel' ),
+                'tab'       => Controls_Manager::TAB_STYLE,
+                'condition' => array(
+                    'layout' => 'grid',
+                ),
+            )
+        );
+
+        $this->add_responsive_control(
+            'grid_columns',
+            array(
+                'label'          => esc_html__( 'Grid Columns', 'dope-carousel' ),
+                'type'           => Controls_Manager::NUMBER,
+                'default'        => 3,
+                'tablet_default' => 2,
+                'mobile_default' => 1,
+                'min'            => 1,
+                'step'           => 1,
+                'selectors'      => array(
+                    '{{WRAPPER}} .dc-carousel--layout-grid .dc-carousel__swiper > .swiper-wrapper' => 'grid-template-columns: repeat({{VALUE}}, minmax(0, 1fr));',
+                ),
+            )
+        );
+
+        $this->add_responsive_control(
+            'grid_column_gap',
+            array(
+                'label'      => esc_html__( 'Column Gap', 'dope-carousel' ),
+                'type'       => Controls_Manager::SLIDER,
+                'size_units' => array( 'px', 'em', 'rem' ),
+                'default'    => array(
+                    'size' => 24,
+                    'unit' => 'px',
+                ),
+                'tablet_default' => array(
+                    'size' => 18,
+                    'unit' => 'px',
+                ),
+                'mobile_default' => array(
+                    'size' => 12,
+                    'unit' => 'px',
+                ),
+                'range'      => array(
+                    'px' => array(
+                        'min' => 0,
+                        'max' => 120,
+                    ),
+                ),
+                'selectors'  => array(
+                    '{{WRAPPER}} .dc-carousel--layout-grid .dc-carousel__swiper > .swiper-wrapper' => 'column-gap: {{SIZE}}{{UNIT}};',
+                ),
+            )
+        );
+
+        $this->add_responsive_control(
+            'grid_row_gap',
+            array(
+                'label'      => esc_html__( 'Row Gap', 'dope-carousel' ),
+                'type'       => Controls_Manager::SLIDER,
+                'size_units' => array( 'px', 'em', 'rem' ),
+                'default'    => array(
+                    'size' => 24,
+                    'unit' => 'px',
+                ),
+                'tablet_default' => array(
+                    'size' => 18,
+                    'unit' => 'px',
+                ),
+                'mobile_default' => array(
+                    'size' => 12,
+                    'unit' => 'px',
+                ),
+                'range'      => array(
+                    'px' => array(
+                        'min' => 0,
+                        'max' => 120,
+                    ),
+                ),
+                'selectors'  => array(
+                    '{{WRAPPER}} .dc-carousel--layout-grid .dc-carousel__swiper > .swiper-wrapper' => 'row-gap: {{SIZE}}{{UNIT}};',
+                ),
+            )
+        );
+
+        $this->add_control(
+            'grid_align_items',
+            array(
+                'label'   => esc_html__( 'Align Items', 'dope-carousel' ),
+                'type'    => Controls_Manager::SELECT,
+                'default' => 'stretch',
+                'options' => array(
+                    'start'   => esc_html__( 'Start', 'dope-carousel' ),
+                    'center'  => esc_html__( 'Center', 'dope-carousel' ),
+                    'end'     => esc_html__( 'End', 'dope-carousel' ),
+                    'stretch' => esc_html__( 'Stretch', 'dope-carousel' ),
+                ),
+                'selectors' => array(
+                    '{{WRAPPER}} .dc-carousel--layout-grid .dc-carousel__swiper > .swiper-wrapper' => 'align-items: {{VALUE}};',
+                ),
+            )
+        );
+
+        $this->add_control(
+            'grid_justify_items',
+            array(
+                'label'   => esc_html__( 'Justify Items', 'dope-carousel' ),
+                'type'    => Controls_Manager::SELECT,
+                'default' => 'stretch',
+                'options' => array(
+                    'start'   => esc_html__( 'Start', 'dope-carousel' ),
+                    'center'  => esc_html__( 'Center', 'dope-carousel' ),
+                    'end'     => esc_html__( 'End', 'dope-carousel' ),
+                    'stretch' => esc_html__( 'Stretch', 'dope-carousel' ),
+                ),
+                'selectors' => array(
+                    '{{WRAPPER}} .dc-carousel--layout-grid .dc-carousel__swiper > .swiper-wrapper' => 'justify-items: {{VALUE}};',
+                ),
+            )
+        );
+
+        $this->add_responsive_control(
+            'grid_card_min_height',
+            array(
+                'label'      => esc_html__( 'Card Min Height', 'dope-carousel' ),
+                'type'       => Controls_Manager::SLIDER,
+                'size_units' => array( 'px', 'vh', 'rem' ),
+                'range'      => array(
+                    'px' => array(
+                        'min' => 0,
+                        'max' => 1200,
+                    ),
+                    'vh' => array(
+                        'min' => 0,
+                        'max' => 100,
+                    ),
+                ),
+                'selectors'  => array(
+                    '{{WRAPPER}} .dc-carousel--layout-grid .dc-carousel__card' => 'min-height: {{SIZE}}{{UNIT}};',
+                ),
+            )
+        );
+
+        $this->add_control(
+            'grid_equal_height_rows',
+            array(
+                'label'        => esc_html__( 'Equal Height Rows', 'dope-carousel' ),
+                'type'         => Controls_Manager::SWITCHER,
+                'default'      => '',
+                'label_on'     => esc_html__( 'Yes', 'dope-carousel' ),
+                'label_off'    => esc_html__( 'No', 'dope-carousel' ),
+                'return_value' => 'yes',
+                'selectors'    => array(
+                    '{{WRAPPER}} .dc-carousel--layout-grid .dc-carousel__swiper > .swiper-wrapper' => 'grid-auto-rows: 1fr;',
+                    '{{WRAPPER}} .dc-carousel--layout-grid .dc-carousel__slide' => 'height: 100%;',
+                ),
+            )
+        );
+
+        $this->end_controls_section();
     }
 
     private function register_style_container_controls(): void {
@@ -1099,8 +1297,11 @@ class Dope_Carousel_Widget extends Widget_Base {
         $this->start_controls_section(
             'section_style_navigation',
             array(
-                'label' => esc_html__( 'Navigation Arrows', 'dope-carousel' ),
-                'tab'   => Controls_Manager::TAB_STYLE,
+                'label'     => esc_html__( 'Navigation Arrows', 'dope-carousel' ),
+                'tab'       => Controls_Manager::TAB_STYLE,
+                'condition' => array(
+                    'layout!' => 'grid',
+                ),
             )
         );
 
@@ -1220,8 +1421,11 @@ class Dope_Carousel_Widget extends Widget_Base {
         $this->start_controls_section(
             'section_style_pagination',
             array(
-                'label' => esc_html__( 'Pagination Bullets', 'dope-carousel' ),
-                'tab'   => Controls_Manager::TAB_STYLE,
+                'label'     => esc_html__( 'Pagination Bullets', 'dope-carousel' ),
+                'tab'       => Controls_Manager::TAB_STYLE,
+                'condition' => array(
+                    'layout!' => 'grid',
+                ),
             )
         );
 
@@ -1304,9 +1508,11 @@ class Dope_Carousel_Widget extends Widget_Base {
             return;
         }
 
-        $layout = isset( $settings['layout'] ) && in_array( $settings['layout'], array( 'slider', 'single_row', 'double_row' ), true )
+        $layout = isset( $settings['layout'] ) && in_array( $settings['layout'], array( 'slider', 'single_row', 'double_row', 'grid' ), true )
             ? $settings['layout']
             : 'slider';
+
+        $is_grid_layout = 'grid' === $layout;
 
         $slide_style = isset( $settings['slide_style'] ) && in_array( $settings['slide_style'], array( 'slide', 'fade', 'ticker' ), true )
             ? $settings['slide_style']
@@ -1318,6 +1524,10 @@ class Dope_Carousel_Widget extends Widget_Base {
 
         if ( 'single_row' !== $layout ) {
             $carousel_direction = 'horizontal';
+        }
+
+        if ( $is_grid_layout ) {
+            $slide_style = 'slide';
         }
 
         $gallery_show_title       = $this->is_enabled( $settings, 'gallery_show_title', true );
@@ -1367,8 +1577,12 @@ class Dope_Carousel_Widget extends Widget_Base {
             }
         }
 
-        $effective_show_arrows = $alternate_ticker_rows ? false : $show_arrows;
-        $effective_show_dots   = $alternate_ticker_rows ? false : $show_dots;
+        $effective_show_arrows = $is_grid_layout ? false : ( $alternate_ticker_rows ? false : $show_arrows );
+        $effective_show_dots   = $is_grid_layout ? false : ( $alternate_ticker_rows ? false : $show_dots );
+        $effective_loop        = $is_grid_layout ? false : $loop;
+        $effective_autoplay    = $is_grid_layout ? false : $autoplay;
+        $effective_drag        = $is_grid_layout ? false : $allow_drag;
+        $effective_pause_on_hover = $is_grid_layout ? false : $pause_on_hover;
 
         $uid           = wp_unique_id( 'dc-carousel-' );
         $prev_button   = $uid . '-prev';
@@ -1390,13 +1604,13 @@ class Dope_Carousel_Widget extends Widget_Base {
                 'mobile'  => $space_between_mobile,
             ),
             'speed'          => $speed,
-            'loop'           => $loop,
-            'autoplay'       => $autoplay,
+            'loop'           => $effective_loop,
+            'autoplay'       => $effective_autoplay,
             'autoplayDelay'  => $autoplay_delay,
-            'pauseOnHover'   => $pause_on_hover,
+            'pauseOnHover'   => $effective_pause_on_hover,
             'arrows'         => $effective_show_arrows,
             'dots'           => $effective_show_dots,
-            'drag'           => $allow_drag,
+            'drag'           => $effective_drag,
             'tickerDirection'=> $ticker_direction,
             'tickerSpeed'    => $ticker_speed,
             'galleryVisibilityTitle'       => $gallery_show_title,
